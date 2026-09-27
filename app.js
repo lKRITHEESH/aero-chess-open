@@ -117,7 +117,6 @@ function render(){
   renderPlayers(players);
   renderMatches(matches);
   renderStandings(players, matches);
-  renderRounds(matches);
 
   $("updatedAt").textContent = "Updated " + new Date().toLocaleString("en-IN", {
     day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit"
@@ -134,29 +133,59 @@ function renderPlayers(players){
     </article>`).join("") : `<div class="empty">No players found.</div>`;
 }
 
-function renderRounds(matches){
-  const select = $("roundFilter");
-  const old = select.value;
-  const rounds = [...new Set(matches.map(m=>m.round).filter(Boolean))];
-  select.innerHTML = `<option value="all">All rounds</option>` + rounds.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join("");
-  select.value = rounds.includes(old) ? old : "all";
+/* Groups matches into columns by their `round` value, in the order rounds
+   first appear in the sheet, and renders them as a bracket. Each column's
+   matches are vertically centered/spaced (CSS flex `justify-content: space-around`
+   on equal-height columns), so if each round has half as many matches as the
+   one before it (a true single-elimination bracket), pairs line up naturally.
+   For a round-robin sheet, rounds just show as side-by-side columns — still
+   useful, but there's no "advancing winner" concept in that format. */
+function renderMatches(matches){
+  if(!matches.length){
+    $("bracketWrap").innerHTML = `<div class="empty">No matches published yet.</div>`;
+    return;
+  }
+
+  const roundOrder = [];
+  const byRound = {};
+  matches.forEach(m => {
+    const r = m.round || "Round";
+    if(!byRound[r]){ byRound[r] = []; roundOrder.push(r); }
+    byRound[r].push(m);
+  });
+
+  $("bracketWrap").innerHTML = roundOrder.map(round => `
+    <div class="bracket-round">
+      <div class="bracket-round-title">${esc(round)}</div>
+      ${byRound[round].map(m => bracketMatchHTML(m)).join("")}
+    </div>
+  `).join("");
 }
 
-function renderMatches(matches){
-  const filter = $("roundFilter").value;
-  const filtered = filter==="all" ? matches : matches.filter(m=>m.round===filter);
-  $("matchesList").innerHTML = filtered.length ? filtered.map(m=>`
-    <article class="match-card">
-      <div class="round">${esc(m.round || "Match")}</div>
-      <div class="player-a">${esc(m.player1)}</div>
-      <div class="vs">VS</div>
-      <div class="player-b">${esc(m.player2)}</div>
-      <div class="match-meta">
-        📅 ${esc(m.date || "TBA")}<br>
-        ⏰ ${esc(m.time || "TBA")}
-        <div class="result">${esc(m.result || "Pending")}</div>
+function bracketMatchHTML(m){
+  const result = String(m.result || "").trim().toLowerCase();
+  const p1Wins = result === "p1";
+  const p2Wins = result === "p2";
+  const isDraw = ["draw","d"].includes(result);
+  const cls1 = p1Wins ? "winner" : (p2Wins ? "loser" : "");
+  const cls2 = p2Wins ? "winner" : (p1Wins ? "loser" : "");
+  const pending = !result || result === "—" || result === "-" || result === "pending";
+
+  return `
+    <div class="bracket-match">
+      <div class="bracket-slot ${cls1}">
+        <span>${esc(m.player1 || "TBD")}</span>
+        ${p1Wins ? '<span class="pts">1</span>' : isDraw ? '<span class="pts">½</span>' : ""}
       </div>
-    </article>`).join("") : `<div class="empty">No matches published yet.</div>`;
+      <div class="bracket-slot ${cls2}">
+        <span>${esc(m.player2 || "TBD")}</span>
+        ${p2Wins ? '<span class="pts">1</span>' : isDraw ? '<span class="pts">½</span>' : ""}
+      </div>
+      <div class="bracket-meta">
+        <span>${esc(m.date || "TBA")} · ${esc(m.time || "TBA")}</span>
+        <span class="${pending ? "pending" : ""}">${pending ? "Pending" : esc(m.result)}</span>
+      </div>
+    </div>`;
 }
 
 function renderStandings(players, matches){
@@ -190,7 +219,6 @@ async function loadData(){
 }
 
 $("playerSearch").addEventListener("input", ()=>renderPlayers(state.players));
-$("roundFilter").addEventListener("change", ()=>renderMatches(state.matches));
 $("menuBtn").addEventListener("click", ()=>$("navLinks").classList.toggle("open"));
 
 loadData();
