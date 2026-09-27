@@ -1,13 +1,17 @@
-/*
-  AERO CHESS OPEN — DATA CONNECTION
+// ============================================================
+// CONFIGURE THIS FILE — that's the only setup step now.
+// ============================================================
 
-  After you deploy the Google Apps Script supplied in /google-apps-script/Code.gs,
-  paste its Web App URL below.
+// The ID is the long string in your sheet's URL, between /d/ and /edit:
+// https://docs.google.com/spreadsheets/d/  1TU7oxekoErJuN9eIZFujQTNRbCMAqBky-p-3WysGTpk  /edit
+const SHEET_ID = "1TU7oxekoErJuN9eIZFujQTNRbCMAqBky-p-3WysGTpk";
 
-  Example:
-  const API_URL = "https://script.google.com/macros/s/AKfycbyLFVLkU2YVPBhvgIiFWM4fhOrYZA2OAdJcZXSjjHMqFVOTKvNbXwKpX-1t_2za4ukX/exec";
+// Tab names inside the sheet — must match exactly (case-sensitive)
+const SHEET_TABS = {
+  settings: "Settings",
+  players: "Players",
+  matches: "Matches",
+};
 
-  If API_URL is empty, the website uses the sample data in app.js.
-*/
-const API_URL = "";
-const REFRESH_MS = 30000;
+// How often the site re-checks the sheet for updates (milliseconds)
+const REFRESH_INTERVAL_MS = 30000;
