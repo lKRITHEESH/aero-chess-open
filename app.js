@@ -13,9 +13,8 @@ const sampleData = {
     {id:"4", name:"Vishnu", paid:"NO", status:"Registered"}
   ],
   matches: [
-    {round:"Round 1", player1:"Arjun", player2:"Rahul", date:"Sep 30", time:"14:00", result:"P1"},
-    {round:"Round 1", player1:"Karthik", player2:"Vishnu", date:"Sep 30", time:"14:20", result:"P2"},
-    {round:"Finals", player1:"Arjun", player2:"Vishnu", date:"Sep 30", time:"15:00", result:"Pending"}
+    {round:"Round 1", player1:"Arjun", player2:"Rahul", date:"Sep 30", time:"2:00 PM", result:"—"},
+    {round:"Round 1", player1:"Karthik", player2:"Vishnu", date:"Sep 30", time:"2:20 PM", result:"—"}
   ]
 };
 
@@ -70,6 +69,7 @@ function render(){
   renderPlayers(players);
   renderMatches(matches);
   renderStandings(players, matches);
+  renderRounds(matches);
 
   $("updatedAt").textContent = "Updated " + new Date().toLocaleString("en-IN", {
     day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit"
@@ -86,57 +86,29 @@ function renderPlayers(players){
     </article>`).join("") : `<div class="empty">No players found.</div>`;
 }
 
+function renderRounds(matches){
+  const select = $("roundFilter");
+  const old = select.value;
+  const rounds = [...new Set(matches.map(m=>m.round).filter(Boolean))];
+  select.innerHTML = `<option value="all">All rounds</option>` + rounds.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join("");
+  select.value = rounds.includes(old) ? old : "all";
+}
+
 function renderMatches(matches){
-  const container = $("matchesList");
-  if(!matches || !matches.length){
-    container.innerHTML = `<div class="empty">No matches published yet.</div>`;
-    return;
-  }
-
-  const roundsMap = {};
-  const roundOrder = [];
-  matches.forEach(m => {
-    const roundName = m.round || "Round 1";
-    if(!roundsMap[roundName]){
-      roundsMap[roundName] = [];
-      roundOrder.push(roundName);
-    }
-    roundsMap[roundName].push(m);
-  });
-
-  let bracketHTML = `<div class="bracket-container">`;
-
-  roundOrder.forEach((rName) => {
-    bracketHTML += `<div class="bracket-round"><div class="bracket-round-title">${esc(rName)}</div><div class="bracket-matches">`;
-    
-    roundsMap[rName].forEach(m => {
-      const res = String(m.result || "").trim().toLowerCase();
-      const p1Won = ["p1","player1","1","win1"].includes(res) || res === String(m.player1).toLowerCase()+" win";
-      const p2Won = ["p2","player2","2","win2"].includes(res) || res === String(m.player2).toLowerCase()+" win";
-      
-      bracketHTML += `
-        <div class="bracket-match">
-          <div class="bracket-player ${p1Won ? 'winner' : ''}">
-            <span class="p-name">${esc(m.player1 || 'TBA')}</span>
-            ${p1Won ? '<span class="win-badge">✔</span>' : ''}
-          </div>
-          <div class="bracket-player ${p2Won ? 'winner' : ''}">
-            <span class="p-name">${esc(m.player2 || 'TBA')}</span>
-            ${p2Won ? '<span class="win-badge">✔</span>' : ''}
-          </div>
-          <div class="bracket-info">
-            <span>📅 ${esc(m.date || 'TBA')}</span>
-            <span>⏰ ${esc(m.time || 'TBA')}</span>
-          </div>
-        </div>
-      `;
-    });
-
-    bracketHTML += `</div></div>`;
-  });
-
-  bracketHTML += `</div>`;
-  container.innerHTML = bracketHTML;
+  const filter = $("roundFilter").value;
+  const filtered = filter==="all" ? matches : matches.filter(m=>m.round===filter);
+  $("matchesList").innerHTML = filtered.length ? filtered.map(m=>`
+    <article class="match-card">
+      <div class="round">${esc(m.round || "Match")}</div>
+      <div class="player-a">${esc(m.player1)}</div>
+      <div class="vs">VS</div>
+      <div class="player-b">${esc(m.player2)}</div>
+      <div class="match-meta">
+        📅 ${esc(m.date || "TBA")}<br>
+        ⏰ ${esc(m.time || "TBA")}
+        <div class="result">${esc(m.result || "Pending")}</div>
+      </div>
+    </article>`).join("") : `<div class="empty">No matches published yet.</div>`;
 }
 
 function renderStandings(players, matches){
@@ -166,6 +138,7 @@ async function loadData(){
 }
 
 $("playerSearch").addEventListener("input", ()=>renderPlayers(state.players));
+$("roundFilter").addEventListener("change", ()=>renderMatches(state.matches));
 $("menuBtn").addEventListener("click", ()=>$("navLinks").classList.toggle("open"));
 
 loadData();

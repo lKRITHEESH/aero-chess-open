@@ -39,7 +39,7 @@
           made to take a break, meet your classmates and enjoy the game.
         </p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="#matches">View Bracket</a>
+          <a class="btn btn-primary" href="#matches">View Matches</a>
           <a class="btn btn-ghost" href="#players">View Players</a>
         </div>
       </div>
@@ -106,9 +106,12 @@
     <section class="section" id="matches">
       <div class="section-head">
         <div>
-          <div class="section-kicker">TOURNAMENT BRACKET</div>
+          <div class="section-kicker">WHO PLAYS WHOM</div>
           <h2>Matches</h2>
         </div>
+        <select id="roundFilter" class="select">
+          <option value="all">All rounds</option>
+        </select>
       </div>
       <div id="matchesList" class="matches-list"></div>
     </section>
