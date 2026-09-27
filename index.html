@@ -3,182 +3,69 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Season 1 — Aero Chess Open</title>
-  <meta name="description" content="Aero Chess Open — Season 1 tournament dashboard for 3rd Year Aerospace Engineering students.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <title>Aero Chess Open — Season 1</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f4f4f9;
+      color: #333;
+    }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    h1 { color: #2c3e50; }
+    .item { margin-bottom: 12px; }
+    .label { font-weight: bold; color: #555; }
+  </style>
 </head>
 <body>
-  <header class="hero">
-    <div class="nav wrap">
-      <div class="brand">
-        <div class="brand-mark">♞</div>
-        <div>
-          <div class="eyebrow">SEASON 1</div>
-          <div class="brand-title">AERO CHESS OPEN</div>
-        </div>
-      </div>
-      <button class="menu-btn" id="menuBtn" aria-label="Open menu">☰</button>
-      <nav id="navLinks">
-        <a href="#home">Home</a>
-        <a href="#players">Players</a>
-        <a href="#matches">Matches</a>
-        <a href="#standings">Standings</a>
-        <a href="#prize">Prize Pool</a>
-      </nav>
-    </div>
 
-    <div class="hero-content wrap" id="home">
-      <div class="hero-copy">
-        <div class="pill">♟ RAPID CHESS • 10 MINUTES EACH</div>
-        <h1>YOUR CLASS.<br><span>YOUR BOARD.</span><br>YOUR MOVE.</h1>
-        <p class="hero-text">
-          A friendly chess tournament for 3rd Year Aerospace Engineering students —
-          made to take a break, meet your classmates and enjoy the game.
-        </p>
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="#matches">View Matches</a>
-          <a class="btn btn-ghost" href="#players">View Players</a>
-        </div>
-      </div>
+  <div class="card">
+    <h1>Aero Chess Open — Season 1</h1>
+    <div id="details">Loading event details from Google Sheet...</div>
+  </div>
 
-      <div class="knight-art" aria-hidden="true">
-        <div class="knight">♞</div>
-        <div class="knight mirror">♞</div>
-        <div class="center-cut">♟</div>
-      </div>
-    </div>
-  </header>
+  <script>
+    // Replace with your Published CSV URL from Step 1
+    const sheetCsvUrl = 'YOUR_PUBLISHED_CSV_URL_HERE';
 
-  <main class="wrap main">
-    <section class="stats-grid">
-      <article class="stat-card">
-        <div class="stat-icon">👥</div>
-        <div>
-          <div class="stat-label">Players</div>
-          <div class="stat-value" id="playerCount">—</div>
-        </div>
-      </article>
-      <article class="stat-card">
-        <div class="stat-icon">💰</div>
-        <div>
-          <div class="stat-label">Prize Pool</div>
-          <div class="stat-value" id="prizePool">₹—</div>
-        </div>
-      </article>
-      <article class="stat-card">
-        <div class="stat-icon">♟</div>
-        <div>
-          <div class="stat-label">Format</div>
-          <div class="stat-value small">Rapid · 10 min</div>
-        </div>
-      </article>
-      <article class="stat-card">
-        <div class="stat-icon">📅</div>
-        <div>
-          <div class="stat-label">Tournament</div>
-          <div class="stat-value small" id="eventDate">Sep 30 onwards</div>
-        </div>
-      </article>
-    </section>
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      const data = {};
+      lines.slice(1).forEach(line => {
+        const [key, value] = line.split(',').map(item => item.trim().replace(/^"|"$/g, ''));
+        if (key) data[key] = value;
+      });
+      return data;
+    }
 
-    <section class="notice">
-      <div class="notice-icon">♟</div>
-      <div>
-        <strong>Everyone is welcome.</strong>
-        <span>Experienced player, beginner, or someone learning the rules — come play and have fun.</span>
-      </div>
-    </section>
+    async function loadSheetData() {
+      try {
+        const response = await fetch(sheetCsvUrl);
+        const csvText = await response.text();
+        const settings = parseCSV(csvText);
 
-    <section class="section" id="players">
-      <div class="section-head">
-        <div>
-          <div class="section-kicker">THE FIELD</div>
-          <h2>Players</h2>
-        </div>
-        <input id="playerSearch" class="search" type="search" placeholder="Search player…">
-      </div>
-      <div id="playersGrid" class="players-grid"></div>
-    </section>
+        document.getElementById('details').innerHTML = `
+          <div class="item"><span class="label">Event Date:</span> ${settings.eventDate || 'N/A'}</div>
+          <div class="item"><span class="label">Venue:</span> ${settings.venue || 'N/A'}</div>
+          <div class="item"><span class="label">Entry Fee:</span> ₹${settings.fee || 'N/A'}</div>
+          <div class="item"><span class="label">Time Control:</span> ${settings.timeControl || 'N/A'}</div>
+          <div class="item"><span class="label">Prize Note:</span> ${settings.prizeNote || 'N/A'}</div>
+        `;
+      } catch (error) {
+        console.error('Error fetching sheet data:', error);
+        document.getElementById('details').innerText = 'Failed to load event details.';
+      }
+    }
 
-    <section class="section" id="matches">
-      <div class="section-head">
-        <div>
-          <div class="section-kicker">WHO PLAYS WHOM</div>
-          <h2>Matches</h2>
-        </div>
-        <select id="roundFilter" class="select">
-          <option value="all">All rounds</option>
-        </select>
-      </div>
-      <div id="matchesList" class="matches-list"></div>
-    </section>
+    loadSheetData();
+  </script>
 
-    <section class="section" id="standings">
-      <div class="section-head">
-        <div>
-          <div class="section-kicker">CURRENT TABLE</div>
-          <h2>Standings</h2>
-        </div>
-        <span class="live-dot"><i></i> Live data</span>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th><th>Player</th><th>Played</th><th>W</th><th>D</th><th>L</th><th>Pts</th>
-            </tr>
-          </thead>
-          <tbody id="standingsBody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="section prize-section" id="prize">
-      <div class="prize-card">
-        <div class="prize-left">
-          <div class="section-kicker">THE POT</div>
-          <h2>Prize Pool</h2>
-          <div class="big-money" id="prizeBig">₹—</div>
-          <p id="prizeNote">₹10 registration fee per player. The collected amount goes to the Winner and Runner-Up.</p>
-        </div>
-        <div class="prize-right">
-          <div class="prize-row"><span>Registered</span><strong id="registeredCount">—</strong></div>
-          <div class="prize-row"><span>Fee / player</span><strong>₹10</strong></div>
-          <div class="prize-row"><span>Collected</span><strong id="collectedCount">—</strong></div>
-          <div class="prize-row"><span>Prize distribution</span><strong>Winner + Runner-Up</strong></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section info-grid">
-      <article class="info-card">
-        <div class="info-icon">📍</div>
-        <div><h3>Venue</h3><p>Aero 3rd Year Classroom</p></div>
-      </article>
-      <article class="info-card">
-        <div class="info-icon">⏱</div>
-        <div><h3>Time Control</h3><p>10 minutes per player</p></div>
-      </article>
-      <article class="info-card">
-        <div class="info-icon">🚫</div>
-        <div><h3>Fair Play</h3><p>No engines. No excuses. Just chess.</p></div>
-      </article>
-    </section>
-
-    <div class="updated" id="updatedAt">Loading tournament data…</div>
-  </main>
-
-  <footer>
-    <div class="wrap footer-inner">
-      <div><strong>SEASON 1 — AERO CHESS OPEN</strong><br><span>3rd Year Aerospace Engineering</span></div>
-      <div>♞ Make your move.</div>
-    </div>
-  </footer>
-
-  <script src="config.js"></script>
-  <script src="app.js"></script>
 </body>
 </html>
