@@ -5,7 +5,7 @@
   paste its Web App URL below.
 
   Example:
-  const API_URL = "https://script.google.com/macros/s/XXXXXXXX/exec";
+  const API_URL = "https://script.google.com/macros/s/AKfycbxenh-Y0haKI0RODxQeqXASPPUsxvggTkAmIKPjik8I6_raf3LFlh3pHIzoXwJwBOXo/exec";
 
   If API_URL is empty, the website uses the sample data in app.js.
 */
