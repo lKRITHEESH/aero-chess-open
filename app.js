@@ -27,13 +27,60 @@ function esc(s){
   return String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 }
 
-function normalize(raw){
-  const settings = raw.settings || sampleData.settings;
-  const players = Array.isArray(raw.players) ? raw.players : [];
-  const matches = Array.isArray(raw.matches) ? raw.matches : [];
-  return {settings, players, matches};
+/* ---------- CSV parsing (handles quoted fields, commas, newlines) ---------- */
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  for(let i = 0; i < text.length; i++){
+    const c = text[i], next = text[i+1];
+    if(inQuotes){
+      if(c === '"' && next === '"'){ field += '"'; i++; }
+      else if(c === '"'){ inQuotes = false; }
+      else { field += c; }
+    } else {
+      if(c === '"'){ inQuotes = true; }
+      else if(c === ','){ row.push(field); field = ""; }
+      else if(c === '\r'){ /* skip */ }
+      else if(c === '\n'){ row.push(field); rows.push(row); row = []; field = ""; }
+      else { field += c; }
+    }
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(cell => String(cell).trim() !== ""));
 }
 
+function csvToObjects(text){
+  const rows = parseCSV(text);
+  if(!rows.length) return [];
+  const headers = rows[0].map(h => String(h).trim().toLowerCase());
+  return rows.slice(1).map(r => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (r[i] ?? "").trim(); });
+    return obj;
+  });
+}
+
+async function fetchTab(tabName){
+  const res = await fetch(sheetCsvUrl(tabName) + "&_=" + Date.now(), { cache: "no-store" });
+  if(!res.ok) throw new Error("Could not load tab: " + tabName + " (HTTP " + res.status + ")");
+  const text = await res.text();
+  if(/^\s*<!DOCTYPE html/i.test(text) || /accounts\.google\.com/i.test(text)){
+    throw new Error("Sheet is not public. Share it as \"Anyone with the link – Viewer\".");
+  }
+  return csvToObjects(text);
+}
+
+function buildSettings(rows){
+  const settings = { ...sampleData.settings };
+  rows.forEach(r => {
+    const key = (r.key || "").trim();
+    const value = (r.value ?? "").trim();
+    if(key) settings[key] = value;
+  });
+  return settings;
+}
+
+/* ---------- Standings ---------- */
 function calculateStandings(players, matches){
   const map = {};
   players.forEach(p => map[p.name] = {name:p.name, played:0, w:0, d:0, l:0, pts:0});
@@ -53,6 +100,7 @@ function calculateStandings(players, matches){
   return Object.values(map).sort((a,b)=>b.pts-a.pts || b.w-a.w || a.name.localeCompare(b.name));
 }
 
+/* ---------- Rendering ---------- */
 function render(){
   const {settings, players, matches} = state;
   const paidCount = players.filter(p => String(p.paid).toUpperCase()==="YES").length;
@@ -118,20 +166,24 @@ function renderStandings(players, matches){
   `).join("") : `<tr><td colspan="7">No standings yet.</td></tr>`;
 }
 
+/* ---------- Data loading straight from the Google Sheet ---------- */
 async function loadData(){
-  if(!window.API_URL){
-    state = sampleData;
-    render();
-    return;
-  }
   try{
-    const res = await fetch(window.API_URL + "?t=" + Date.now(), {cache:"no-store"});
-    if(!res.ok) throw new Error("HTTP " + res.status);
-    state = normalize(await res.json());
+    const [settingsRows, players, matches] = await Promise.all([
+      fetchTab(SHEET_TABS.settings),
+      fetchTab(SHEET_TABS.players),
+      fetchTab(SHEET_TABS.matches)
+    ]);
+
+    state = {
+      settings: buildSettings(settingsRows),
+      players: players.filter(p => p.name),
+      matches: matches.filter(m => m.player1 && m.player2)
+    };
     render();
   }catch(err){
     console.error(err);
-    $("updatedAt").textContent = "Could not load live data. Showing demo data.";
+    $("updatedAt").textContent = "Could not load the Google Sheet (" + err.message + "). Showing demo data.";
     state = sampleData;
     render();
   }
@@ -142,4 +194,4 @@ $("roundFilter").addEventListener("change", ()=>renderMatches(state.matches));
 $("menuBtn").addEventListener("click", ()=>$("navLinks").classList.toggle("open"));
 
 loadData();
-setInterval(loadData, window.REFRESH_MS || 30000);
+setInterval(loadData, (typeof REFRESH_MS !== "undefined" ? REFRESH_MS : 30000));
