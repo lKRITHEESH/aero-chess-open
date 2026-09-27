@@ -1,145 +1,326 @@
-const sampleData = {
-  settings: {
-    eventDate: "September 30 onwards",
-    venue: "Aero 3rd Year Classroom",
-    fee: 10,
-    timeControl: "10 minutes per player",
-    prizeNote: "The collected registration amount goes to the Winner and Runner-Up."
-  },
-  players: [
-    {id:"1", name:"Arjun", paid:"YES", status:"Registered"},
-    {id:"2", name:"Rahul", paid:"YES", status:"Registered"},
-    {id:"3", name:"Karthik", paid:"YES", status:"Registered"},
-    {id:"4", name:"Vishnu", paid:"NO", status:"Registered"}
-  ],
-  matches: [
-    {round:"Round 1", player1:"Arjun", player2:"Rahul", date:"Sep 30", time:"2:00 PM", result:"—"},
-    {round:"Round 1", player1:"Karthik", player2:"Vishnu", date:"Sep 30", time:"2:20 PM", result:"—"}
-  ]
+// ============================================================
+// Aero Chess Open — reads live data straight from the Google Sheet.
+// No Apps Script, no backend deployment. The sheet just needs to be
+// shared as "Anyone with the link can view".
+// ============================================================
+
+const state = {
+  settings: {},
+  players: [],
+  matches: [],
+  playerSearch: "",
+  roundFilter: "ALL",
 };
 
-let state = { ...sampleData };
-
-const $ = id => document.getElementById(id);
-
-function money(n){ return "₹" + Number(n || 0).toLocaleString("en-IN"); }
-function esc(s){
-  return String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+function gvizUrl(tabName) {
+  return (
+    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=` +
+    encodeURIComponent(tabName) +
+    `&_=${Date.now()}` // cache-bust so updates show up promptly
+  );
 }
 
-function normalize(raw){
-  const settings = raw.settings || sampleData.settings;
-  const players = Array.isArray(raw.players) ? raw.players : [];
-  const matches = Array.isArray(raw.matches) ? raw.matches : [];
-  return {settings, players, matches};
+function cellValue(cell) {
+  if (!cell) return "";
+  if (cell.f !== undefined && cell.f !== null && cell.f !== "") return cell.f;
+  if (cell.v === undefined || cell.v === null) return "";
+  return cell.v;
 }
 
-function calculateStandings(players, matches){
-  const map = {};
-  players.forEach(p => map[p.name] = {name:p.name, played:0, w:0, d:0, l:0, pts:0});
-  matches.forEach(m => {
-    const result = String(m.result || "").trim().toLowerCase();
-    if(!map[m.player1] || !map[m.player2]) return;
-    if(!result || result === "—" || result === "-" || result === "pending") return;
-    map[m.player1].played++; map[m.player2].played++;
-    if(["p1","player1","1","win1",m.player1.toLowerCase()+" win"].includes(result)){
-      map[m.player1].w++; map[m.player1].pts += 1; map[m.player2].l++;
-    } else if(["p2","player2","2","win2",m.player2.toLowerCase()+" win"].includes(result)){
-      map[m.player2].w++; map[m.player2].pts += 1; map[m.player1].l++;
-    } else if(["draw","d","½-½","0.5-0.5"].includes(result)){
-      map[m.player1].d++; map[m.player2].d++; map[m.player1].pts += .5; map[m.player2].pts += .5;
+async function fetchTab(tabName) {
+  const res = await fetch(gvizUrl(tabName));
+  if (!res.ok) throw new Error(`Could not load tab "${tabName}" (HTTP ${res.status})`);
+  const text = await res.text();
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end === -1) {
+    throw new Error(`Tab "${tabName}" did not return readable data. Is the sheet shared as "Anyone with the link can view"?`);
+  }
+  const json = JSON.parse(text.substring(start, end + 1));
+  if (!json.table) return [];
+
+  let headers = json.table.cols.map((c) => (c.label || "").trim());
+  let rows = json.table.rows || [];
+
+  // If Google didn't auto-detect header labels, treat the first row as headers.
+  if (headers.every((h) => h === "")) {
+    if (rows.length === 0) return [];
+    headers = (rows[0].c || []).map((c) => String(cellValue(c)).trim());
+    rows = rows.slice(1);
+  }
+
+  return rows
+    .map((r) => {
+      const obj = {};
+      (r.c || []).forEach((cell, i) => {
+        const key = headers[i] || `col${i}`;
+        obj[key] = cellValue(cell);
+      });
+      return obj;
+    })
+    .filter((obj) => Object.values(obj).some((v) => String(v).trim() !== ""));
+}
+
+function settingsRowsToObject(rows) {
+  const out = {};
+  rows.forEach((r) => {
+    const keys = Object.keys(r);
+    const keyCol = keys.find((k) => k.toLowerCase() === "key") || keys[0];
+    const valCol = keys.find((k) => k.toLowerCase() === "value") || keys[1];
+    if (r[keyCol] !== undefined && String(r[keyCol]).trim() !== "") {
+      out[String(r[keyCol]).trim()] = r[valCol] !== undefined ? r[valCol] : "";
     }
   });
-  return Object.values(map).sort((a,b)=>b.pts-a.pts || b.w-a.w || a.name.localeCompare(b.name));
+  return out;
 }
 
-function render(){
-  const {settings, players, matches} = state;
-  const paidCount = players.filter(p => String(p.paid).toUpperCase()==="YES").length;
-  const prize = paidCount * Number(settings.fee || 10);
-
-  $("playerCount").textContent = players.length;
-  $("registeredCount").textContent = players.length;
-  $("collectedCount").textContent = paidCount + " paid";
-  $("prizePool").textContent = money(prize);
-  $("prizeBig").textContent = money(prize);
-  $("eventDate").textContent = settings.eventDate || "Sep 30 onwards";
-  $("prizeNote").textContent = settings.prizeNote || "Collected registration amount goes to the Winner and Runner-Up.";
-
-  renderPlayers(players);
-  renderMatches(matches);
-  renderStandings(players, matches);
-  renderRounds(matches);
-
-  $("updatedAt").textContent = "Updated " + new Date().toLocaleString("en-IN", {
-    day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit"
-  });
+async function loadAllData() {
+  const [settingsRows, players, matches] = await Promise.all([
+    fetchTab(SHEET_TABS.settings),
+    fetchTab(SHEET_TABS.players),
+    fetchTab(SHEET_TABS.matches),
+  ]);
+  state.settings = settingsRowsToObject(settingsRows);
+  state.players = players;
+  state.matches = matches;
 }
 
-function renderPlayers(players){
-  const q = $("playerSearch").value.trim().toLowerCase();
-  const filtered = players.filter(p => String(p.name).toLowerCase().includes(q));
-  $("playersGrid").innerHTML = filtered.length ? filtered.map((p,i)=>`
-    <article class="player-card">
-      <div><div class="player-number">PLAYER ${i+1}</div><div class="player-name">${esc(p.name)}</div></div>
-      <div class="player-status">${esc(p.status || "Registered")}</div>
-    </article>`).join("") : `<div class="empty">No players found.</div>`;
+// ---------- Rendering ----------
+
+function renderEventInfo() {
+  const s = state.settings;
+  document.getElementById("event-date").textContent = s.eventDate || "TBA";
+  document.getElementById("event-venue").textContent = s.venue || "TBA";
+  document.getElementById("event-time-control").textContent = s.timeControl || "TBA";
+  document.getElementById("event-fee").textContent = s.fee ? `₹${s.fee}` : "—";
+  document.getElementById("event-prize-note").textContent = s.prizeNote || "";
 }
 
-function renderRounds(matches){
-  const select = $("roundFilter");
-  const old = select.value;
-  const rounds = [...new Set(matches.map(m=>m.round).filter(Boolean))];
-  select.innerHTML = `<option value="all">All rounds</option>` + rounds.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join("");
-  select.value = rounds.includes(old) ? old : "all";
+function renderStats() {
+  const totalPlayers = state.players.length;
+  const fee = parseFloat(state.settings.fee) || 0;
+  const paidCount = state.players.filter((p) => String(p.paid).trim().toUpperCase() === "YES").length;
+  const collected = fee * paidCount;
+
+  document.getElementById("stat-registered").textContent = totalPlayers;
+  document.getElementById("stat-paid").textContent = paidCount;
+  document.getElementById("stat-collected").textContent = `₹${collected}`;
+  document.getElementById("stat-prize").textContent = `₹${collected}`;
 }
 
-function renderMatches(matches){
-  const filter = $("roundFilter").value;
-  const filtered = filter==="all" ? matches : matches.filter(m=>m.round===filter);
-  $("matchesList").innerHTML = filtered.length ? filtered.map(m=>`
-    <article class="match-card">
-      <div class="round">${esc(m.round || "Match")}</div>
-      <div class="player-a">${esc(m.player1)}</div>
-      <div class="vs">VS</div>
-      <div class="player-b">${esc(m.player2)}</div>
-      <div class="match-meta">
-        📅 ${esc(m.date || "TBA")}<br>
-        ⏰ ${esc(m.time || "TBA")}
-        <div class="result">${esc(m.result || "Pending")}</div>
-      </div>
-    </article>`).join("") : `<div class="empty">No matches published yet.</div>`;
-}
+function renderPlayers() {
+  const list = document.getElementById("players-list");
+  const query = state.playerSearch.trim().toLowerCase();
+  const filtered = state.players.filter((p) =>
+    String(p.name || "").toLowerCase().includes(query)
+  );
 
-function renderStandings(players, matches){
-  const rows = calculateStandings(players,matches);
-  $("standingsBody").innerHTML = rows.length ? rows.map((r,i)=>`
-    <tr><td>${i+1}</td><td>${esc(r.name)}</td><td>${r.played}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.pts}</td></tr>
-  `).join("") : `<tr><td colspan="7">No standings yet.</td></tr>`;
-}
-
-async function loadData(){
-  if(!window.API_URL){
-    state = sampleData;
-    render();
+  if (filtered.length === 0) {
+    list.innerHTML = `<li class="empty">No players found.</li>`;
     return;
   }
-  try{
-    const res = await fetch(window.API_URL + "?t=" + Date.now(), {cache:"no-store"});
-    if(!res.ok) throw new Error("HTTP " + res.status);
-    state = normalize(await res.json());
-    render();
-  }catch(err){
+
+  list.innerHTML = filtered
+    .map((p) => {
+      const paid = String(p.paid).trim().toUpperCase() === "YES";
+      return `
+        <li class="player-row">
+          <span class="player-name">${escapeHtml(p.name || "Unnamed")}</span>
+          <span class="badge ${paid ? "badge-paid" : "badge-unpaid"}">${paid ? "Paid" : "Unpaid"}</span>
+          <span class="player-status">${escapeHtml(p.status || "")}</span>
+        </li>`;
+    })
+    .join("");
+}
+
+function normalizedResult(r) {
+  return String(r || "").trim().toLowerCase();
+}
+
+function computeStandings() {
+  const points = {};
+  const played = {};
+  const wins = {};
+  const draws = {};
+  const losses = {};
+
+  state.players.forEach((p) => {
+    const name = p.name || "Unnamed";
+    points[name] = 0;
+    played[name] = 0;
+    wins[name] = 0;
+    draws[name] = 0;
+    losses[name] = 0;
+  });
+
+  state.matches.forEach((m) => {
+    const p1 = m.player1;
+    const p2 = m.player2;
+    const result = normalizedResult(m.result);
+    if (!p1 || !p2) return;
+    if (!(p1 in points)) points[p1] = played[p1] = wins[p1] = draws[p1] = losses[p1] = 0;
+    if (!(p2 in points)) points[p2] = played[p2] = wins[p2] = draws[p2] = losses[p2] = 0;
+
+    if (result === "p1") {
+      played[p1]++; played[p2]++;
+      points[p1] += 1; wins[p1]++;
+      losses[p2]++;
+    } else if (result === "p2") {
+      played[p1]++; played[p2]++;
+      points[p2] += 1; wins[p2]++;
+      losses[p1]++;
+    } else if (result === "draw") {
+      played[p1]++; played[p2]++;
+      points[p1] += 0.5; points[p2] += 0.5;
+      draws[p1]++; draws[p2]++;
+    }
+    // "Pending" or anything else: not counted yet
+  });
+
+  return Object.keys(points)
+    .map((name) => ({
+      name,
+      points: points[name],
+      played: played[name],
+      wins: wins[name],
+      draws: draws[name],
+      losses: losses[name],
+    }))
+    .sort((a, b) => b.points - a.points || b.wins - a.wins || a.name.localeCompare(b.name));
+}
+
+function renderStandings() {
+  const tbody = document.getElementById("standings-body");
+  const standings = computeStandings();
+
+  if (standings.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">No standings yet.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = standings
+    .map(
+      (s, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${escapeHtml(s.name)}</td>
+        <td>${s.played}</td>
+        <td>${s.wins}-${s.draws}-${s.losses}</td>
+        <td><strong>${s.points}</strong></td>
+      </tr>`
+    )
+    .join("");
+}
+
+function renderRoundFilterOptions() {
+  const select = document.getElementById("round-filter");
+  const rounds = [];
+  state.matches.forEach((m) => {
+    if (m.round && !rounds.includes(m.round)) rounds.push(m.round);
+  });
+
+  const current = state.roundFilter;
+  select.innerHTML =
+    `<option value="ALL">All rounds</option>` +
+    rounds.map((r) => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join("");
+  select.value = rounds.includes(current) ? current : "ALL";
+  state.roundFilter = select.value;
+}
+
+function resultBadge(result) {
+  const r = normalizedResult(result);
+  if (r === "p1") return `<span class="badge badge-result">Player 1 won</span>`;
+  if (r === "p2") return `<span class="badge badge-result">Player 2 won</span>`;
+  if (r === "draw") return `<span class="badge badge-result">Draw</span>`;
+  return `<span class="badge badge-pending">Pending</span>`;
+}
+
+function renderMatches() {
+  const container = document.getElementById("matches-list");
+  const filtered = state.matches.filter(
+    (m) => state.roundFilter === "ALL" || m.round === state.roundFilter
+  );
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty">No matches found.</div>`;
+    return;
+  }
+
+  container.innerHTML = filtered
+    .map(
+      (m) => `
+      <div class="match-card">
+        <div class="match-round">${escapeHtml(m.round || "")}</div>
+        <div class="match-players">
+          <span>${escapeHtml(m.player1 || "TBD")}</span>
+          <span class="vs">vs</span>
+          <span>${escapeHtml(m.player2 || "TBD")}</span>
+        </div>
+        <div class="match-meta">
+          <span>${escapeHtml(m.date || "")}</span>
+          <span>${escapeHtml(m.time || "")}</span>
+          ${resultBadge(m.result)}
+        </div>
+      </div>`
+    )
+    .join("");
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function renderAll() {
+  renderEventInfo();
+  renderStats();
+  renderPlayers();
+  renderRoundFilterOptions();
+  renderMatches();
+  renderStandings();
+}
+
+function setStatus(message, isError) {
+  const el = document.getElementById("sync-status");
+  el.textContent = message;
+  el.classList.toggle("status-error", !!isError);
+}
+
+async function refresh(showLoading) {
+  if (showLoading) setStatus("Loading tournament data…", false);
+  try {
+    await loadAllData();
+    renderAll();
+    const now = new Date();
+    setStatus(`Last updated ${now.toLocaleTimeString()}`, false);
+  } catch (err) {
     console.error(err);
-    $("updatedAt").textContent = "Could not load live data. Showing demo data.";
-    state = sampleData;
-    render();
+    setStatus(
+      "Couldn't load the sheet. Make sure it's shared as 'Anyone with the link can view'. " +
+        (err && err.message ? err.message : ""),
+      true
+    );
   }
 }
 
-$("playerSearch").addEventListener("input", ()=>renderPlayers(state.players));
-$("roundFilter").addEventListener("change", ()=>renderMatches(state.matches));
-$("menuBtn").addEventListener("click", ()=>$("navLinks").classList.toggle("open"));
+function init() {
+  document.getElementById("player-search").addEventListener("input", (e) => {
+    state.playerSearch = e.target.value;
+    renderPlayers();
+  });
 
-loadData();
-setInterval(loadData, window.REFRESH_MS || 30000);
+  document.getElementById("round-filter").addEventListener("change", (e) => {
+    state.roundFilter = e.target.value;
+    renderMatches();
+  });
+
+  document.getElementById("refresh-btn").addEventListener("click", () => refresh(true));
+
+  refresh(true);
+  setInterval(() => refresh(false), REFRESH_INTERVAL_MS);
+}
+
+document.addEventListener("DOMContentLoaded", init);
