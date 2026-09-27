@@ -20,7 +20,14 @@ const sampleData = {
 
 let state = { ...sampleData };
 
-const $ = id => document.getElementById(id);
+function $(id){
+  const el = document.getElementById(id);
+  if(!el) console.warn("[aero-chess-open] No element with id=\"" + id + "\" in index.html — is it out of sync with app.js?");
+  return el;
+}
+/* Safe helpers: no-op (with a console warning, via $) instead of throwing when the element is missing */
+function setText(id, value){ const el = $(id); if(el) el.textContent = value; }
+function setHTML(id, html){ const el = $(id); if(el) el.innerHTML = html; }
 
 function money(n){ return "₹" + Number(n || 0).toLocaleString("en-IN"); }
 function esc(s){
@@ -106,31 +113,35 @@ function render(){
   const paidCount = players.filter(p => String(p.paid).toUpperCase()==="YES").length;
   const prize = paidCount * Number(settings.fee || 10);
 
-  $("playerCount").textContent = players.length;
-  $("registeredCount").textContent = players.length;
-  $("collectedCount").textContent = paidCount + " paid";
-  $("prizePool").textContent = money(prize);
-  $("prizeBig").textContent = money(prize);
-  $("eventDate").textContent = settings.eventDate || "Sep 30 onwards";
-  $("prizeNote").textContent = settings.prizeNote || "Collected registration amount goes to the Winner and Runner-Up.";
+  setText("playerCount", players.length);
+  setText("registeredCount", players.length);
+  setText("collectedCount", paidCount + " paid");
+  setText("prizePool", money(prize));
+  setText("prizeBig", money(prize));
+  setText("eventDate", settings.eventDate || "Sep 30 onwards");
+  setText("prizeNote", settings.prizeNote || "Collected registration amount goes to the Winner and Runner-Up.");
 
-  renderPlayers(players);
-  renderMatches(matches);
-  renderStandings(players, matches);
+  // Each section renders independently — if one throws (e.g. index.html is
+  // missing an element a newer app.js expects), it's logged to the console
+  // but the rest of the page still renders instead of the whole page dying.
+  try{ renderPlayers(players); }catch(e){ console.error("renderPlayers failed:", e); }
+  try{ renderMatches(matches); }catch(e){ console.error("renderMatches failed:", e); }
+  try{ renderStandings(players, matches); }catch(e){ console.error("renderStandings failed:", e); }
 
-  $("updatedAt").textContent = "Updated " + new Date().toLocaleString("en-IN", {
+  setText("updatedAt", "Updated " + new Date().toLocaleString("en-IN", {
     day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit"
-  });
+  }));
 }
 
 function renderPlayers(players){
-  const q = $("playerSearch").value.trim().toLowerCase();
+  const searchEl = $("playerSearch");
+  const q = searchEl ? searchEl.value.trim().toLowerCase() : "";
   const filtered = players.filter(p => String(p.name).toLowerCase().includes(q));
-  $("playersGrid").innerHTML = filtered.length ? filtered.map((p,i)=>`
+  setHTML("playersGrid", filtered.length ? filtered.map((p,i)=>`
     <article class="player-card">
       <div><div class="player-number">PLAYER ${i+1}</div><div class="player-name">${esc(p.name)}</div></div>
       <div class="player-status">${esc(p.status || "Registered")}</div>
-    </article>`).join("") : `<div class="empty">No players found.</div>`;
+    </article>`).join("") : `<div class="empty">No players found.</div>`);
 }
 
 /* Groups matches into columns by their `round` value, in the order rounds
@@ -142,7 +153,7 @@ function renderPlayers(players){
    useful, but there's no "advancing winner" concept in that format. */
 function renderMatches(matches){
   if(!matches.length){
-    $("bracketWrap").innerHTML = `<div class="empty">No matches published yet.</div>`;
+    setHTML("bracketWrap", `<div class="empty">No matches published yet.</div>`);
     return;
   }
 
@@ -154,12 +165,12 @@ function renderMatches(matches){
     byRound[r].push(m);
   });
 
-  $("bracketWrap").innerHTML = roundOrder.map(round => `
+  setHTML("bracketWrap", roundOrder.map(round => `
     <div class="bracket-round">
       <div class="bracket-round-title">${esc(round)}</div>
       ${byRound[round].map(m => bracketMatchHTML(m)).join("")}
     </div>
-  `).join("");
+  `).join(""));
 }
 
 function bracketMatchHTML(m){
@@ -190,9 +201,9 @@ function bracketMatchHTML(m){
 
 function renderStandings(players, matches){
   const rows = calculateStandings(players,matches);
-  $("standingsBody").innerHTML = rows.length ? rows.map((r,i)=>`
+  setHTML("standingsBody", rows.length ? rows.map((r,i)=>`
     <tr><td>${i+1}</td><td>${esc(r.name)}</td><td>${r.played}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.pts}</td></tr>
-  `).join("") : `<tr><td colspan="7">No standings yet.</td></tr>`;
+  `).join("") : `<tr><td colspan="7">No standings yet.</td></tr>`);
 }
 
 /* ---------- Data loading straight from the Google Sheet ---------- */
@@ -218,8 +229,8 @@ async function loadData(){
   }
 }
 
-$("playerSearch").addEventListener("input", ()=>renderPlayers(state.players));
-$("menuBtn").addEventListener("click", ()=>$("navLinks").classList.toggle("open"));
+$("playerSearch")?.addEventListener("input", ()=>renderPlayers(state.players));
+$("menuBtn")?.addEventListener("click", ()=>$("navLinks")?.classList.toggle("open"));
 
 loadData();
 setInterval(loadData, (typeof REFRESH_MS !== "undefined" ? REFRESH_MS : 30000));
