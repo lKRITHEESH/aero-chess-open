@@ -21,9 +21,7 @@ Players can open one public link and see:
 
 The organizer does NOT need to edit the website every time.
 
-You update the Google Sheet, and the public website reads it directly and refreshes
-automatically every 30 seconds. **There is no backend to deploy** — the site reads the
-sheet's public CSV export straight from the browser.
+You update Google Sheets, and the public website refreshes the data automatically.
 
 ## Folder structure
 
@@ -32,20 +30,23 @@ aero-chess-open/
 ├── index.html
 ├── style.css
 ├── app.js
-└── config.js
+├── config.js
+└── google-apps-script/
+    ├── Code.gs
+    └── README.md
 ```
 
-## 1. Set up the Google Sheet
+## 1. Create the Google Sheet
 
-Your sheet: `Aero Chess Open — Season 1`
+Create a new Google Sheet named:
 
-It needs exactly 3 tabs, named exactly:
+`Aero Chess Open — Season 1`
+
+Create 3 tabs:
 
 ### Settings
 
-Headers: `key`, `value`
-
-| key | value |
+| A | B |
 |---|---|
 | eventDate | September 30 onwards |
 | venue | Aero 3rd Year Classroom |
@@ -88,40 +89,84 @@ Round 1 | Arjun | Rahul | Sep 30 | 2:00 PM | P1
 
 The website then awards Arjun 1 point.
 
-## 2. Make the sheet publicly viewable
+## 2. Create the Google Apps Script backend
 
-This is the step that makes the website able to read it.
+Open the Google Sheet.
 
-In the Google Sheet: `Share` (top right) → `General access` → change to
-**`Anyone with the link`** → role **`Viewer`** → `Done`.
+Go to:
 
-You are only making it *viewable*, not editable, so nobody else can change your data.
-Don't put phone numbers, UPI IDs, or bank details in this sheet, since it's public.
+`Extensions -> Apps Script`
 
-## 3. Connect the website to your sheet
+Open `google-apps-script/Code.gs` from this project and paste it into the Apps Script editor.
 
-Open `config.js` and check the `SHEET_ID` — it must match the long ID in your
-sheet's URL:
+Save it.
+
+## 3. Deploy the backend
+
+In Apps Script:
+
+`Deploy -> New deployment`
+
+Select:
+
+`Web app`
+
+Use:
+
+`Execute as: Me`
+
+For access, choose:
+
+`Anyone`
+
+Deploy and authorize it if Google asks.
+
+Copy the generated Web App URL.
+
+It will look similar to:
 
 ```text
-https://docs.google.com/spreadsheets/d/  <-- THIS PART -->  /edit
+https://script.google.com/macros/s/XXXXXXXXXXXX/exec
 ```
 
-This repo is already set to:
+## 4. Connect the website
+
+Open `config.js`.
+
+Change:
 
 ```javascript
-const SHEET_ID = "1TU7oxekoErJuN9eIZFujQTNRbCMAqBky-p-3WysGTpk";
+const API_URL = "";
 ```
 
-If you ever copy this sheet or make a new one, update `SHEET_ID` in `config.js` to match.
+to:
 
-## 4. Host the website for free
+```javascript
+const API_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL";
+```
+
+Do not add extra quotes around the URL beyond the JavaScript string.
+
+## 5. Host the website for free
 
 GitHub Pages is suitable for this static HTML/CSS/JavaScript website.
 
-In this repository:
+Create a public GitHub repository, for example:
 
-`Settings -> Pages`
+`aero-chess-open`
+
+Upload:
+
+```text
+index.html
+style.css
+app.js
+config.js
+```
+
+Then:
+
+`Repository -> Settings -> Pages`
 
 Choose:
 
@@ -129,7 +174,11 @@ Choose:
 
 Select:
 
-`main` and `/ (root)`
+`main`
+
+and:
+
+`/ (root)`
 
 Save.
 
@@ -143,8 +192,7 @@ Share that link with your class.
 
 ## Updating the tournament
 
-You only edit the Google Sheet. The website re-reads it automatically every 30 seconds
-(or the player can just refresh the page).
+You only edit the Google Sheet.
 
 ### Add a player
 
@@ -152,13 +200,29 @@ Add a row to Players.
 
 ### Collect ₹10
 
-Change `paid = NO` to `paid = YES`. The prize pool automatically changes.
+Change:
+
+```text
+paid = NO
+```
+
+to:
+
+```text
+paid = YES
+```
+
+The prize pool automatically changes.
 
 Example:
 
-10 paid players: `10 × ₹10 = ₹100`
+10 paid players:
 
-25 paid players: `25 × ₹10 = ₹250`
+`10 × ₹10 = ₹100`
+
+25 paid players:
+
+`25 × ₹10 = ₹250`
 
 ### Add a match
 
@@ -166,21 +230,29 @@ Add a row to Matches.
 
 ### Enter a result
 
-Change `Pending` to `P1`, `P2`, or `Draw`. The standings update automatically.
+Change `Pending` to:
 
-## Troubleshooting
+```text
+P1
+```
 
-If the site shows demo data (Arjun / Rahul / Karthik / Vishnu) instead of your real
-players, open the browser console (F12) — the footer message and console will tell you
-why, almost always one of:
+or
 
-- The sheet isn't shared as "Anyone with the link – Viewer" (see step 2).
-- A tab isn't named exactly `Settings`, `Players`, or `Matches`.
-- `SHEET_ID` in `config.js` doesn't match your sheet's URL.
+```text
+P2
+```
+
+or
+
+```text
+Draw
+```
+
+The standings update automatically.
 
 ## Important
 
-This version deliberately keeps money/payment records simple: it displays the total
-collected amount based on the `paid` column. Do not put bank account numbers, UPI
-credentials, phone numbers, or other sensitive personal information in the
-public-facing sheet — remember, the whole sheet is publicly viewable by link.
+This version deliberately keeps money/payment records simple: it displays the total collected amount based on the `paid` column. Do not put bank account numbers, UPI credentials, phone numbers, or other sensitive personal information in the public-facing sheet.
+
+The site polls the backend every 30 seconds, so players normally see updates without refreshing.
+
