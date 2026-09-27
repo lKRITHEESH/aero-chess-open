@@ -1,13 +1,13 @@
 /*
-AERO CHESS OPEN — Frontend configuration.
+  AERO CHESS OPEN — DATA CONNECTION
 
-After deploying Code.gs as a Google Apps Script Web App,
-paste the /exec URL below.
+  After you deploy the Google Apps Script supplied in /google-apps-script/Code.gs,
+  paste its Web App URL below.
 
-Example:
-window.API_URL = "https://script.google.com/macros/s/AKfycbyLFVLkU2YVPBhvgIiFWM4fhOrYZA2OAdJcZXSjjHMqFVOTKvNbXwKpX-1t_2za4ukX/exec";
+  Example:
+  const API_URL = "https://script.google.com/macros/s/AKfycbxenh-Y0haKI0RODxQeqXASPPUsxvggTkAmIKPjik8I6_raf3LFlh3pHIzoXwJwBOXo/exec";
+
+  If API_URL is empty, the website uses the sample data in app.js.
 */
-
-window.API_URL = "";
-
-window.REFRESH_MS = 30000;
+const API_URL = "";
+const REFRESH_MS = 30000;
