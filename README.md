@@ -2,87 +2,225 @@
 
 A free, mobile-friendly tournament website for the 3rd Year Aerospace Engineering chess event.
 
-This version reads your Google Sheet **directly** — there is no Google Apps Script backend to write or deploy anymore. That was the reason the old version showed no data: `config.js` needed a Web App URL from a manually deployed script, and that step never got finished. Now the site just needs your Sheet ID.
+## What this version does
 
-## What it shows
+Players can open one public link and see:
 
-- Player list, searchable
-- Match pairings with a round filter
-- Match date/time and results
-- Automatic standings (1 point win, 0.5 draw)
-- Registered player count, amount collected, prize pool
-- Event date, venue, time control
-- Auto-refreshes every 30 seconds
+- Player list
+- Searchable players
+- Match pairings
+- Round filter
+- Match date/time
+- Results
+- Automatic standings
+- Registered player count
+- Amount collected
+- Prize pool
+- Rapid format / 10 minutes per player
+- Venue and event information
 
-You only ever edit the Google Sheet. The website updates itself.
+The organizer does NOT need to edit the website every time.
+
+You update Google Sheets, and the public website refreshes the data automatically.
 
 ## Folder structure
 
-```
+```text
 aero-chess-open/
 ├── index.html
 ├── style.css
 ├── app.js
-├── config.js
-└── README.md
+└── config.js
 ```
 
-(The old `google-apps-script/` folder is no longer needed — you can delete it.)
+(The `google-apps-script/` folder from the previous version is no longer needed — safe to delete it from the repo.)
 
-## 1. Your Google Sheet
+## 1. Create the Google Sheet
 
-Keep the same 3 tabs, with the same headers, as before:
+Create a new Google Sheet named:
 
-**Settings** — key/value pairs: `eventDate`, `venue`, `fee`, `timeControl`, `prizeNote`
+`Aero Chess Open — Season 1`
 
-**Players** — headers: `id | name | paid | status` (paid = `YES` or `NO`)
+Create 3 tabs:
 
-**Matches** — headers: `round | player1 | player2 | date | time | result`
-(`result` = `P1`, `P2`, `Draw`, or `Pending`)
+### Settings
+
+| A | B |
+|---|---|
+| eventDate | September 30 onwards |
+| venue | Aero 3rd Year Classroom |
+| fee | 10 |
+| timeControl | 10 minutes per player |
+| prizeNote | The collected registration amount goes to the Winner and Runner-Up. |
+
+### Players
+
+Use exactly these headers:
+
+| id | name | paid | status |
+|---|---|---|---|
+| 1 | Arjun | YES | Registered |
+| 2 | Rahul | YES | Registered |
+| 3 | Karthik | NO | Registered |
+
+Set `paid` to YES only after the ₹10 has been collected.
+
+### Matches
+
+Use exactly these headers:
+
+| round | player1 | player2 | date | time | result |
+|---|---|---|---|---|---|
+| Round 1 | Arjun | Rahul | Sep 30 | 2:00 PM | Pending |
+| Round 1 | Karthik | Vishnu | Sep 30 | 2:20 PM | Pending |
+
+For results, use:
+
+- `P1` = player 1 won
+- `P2` = player 2 won
+- `Draw` = draw
+
+Example:
+
+```text
+Round 1 | Arjun | Rahul | Sep 30 | 2:00 PM | P1
+```
+
+The website then awards Arjun 1 point.
 
 ## 2. Share the sheet so the site can read it
 
+No Apps Script backend needed anymore. The site reads the sheet directly.
+
 In the Google Sheet: **Share** → **General access** → **Anyone with the link** → **Viewer**.
 
-This does not let anyone edit it — only view it, the same as anyone opening the shared link today. No sign-in, no API key, no Apps Script needed.
+This only lets people *view* it — the same as opening the link today — it does not let anyone edit it.
+
+> **Why this changed:** the old version needed you to paste the Apps Script's Code.gs into `Extensions -> Apps Script`, deploy it as a Web App, and paste the generated URL into `config.js` as `API_URL`. That step never got completed, so `API_URL` stayed empty and the site silently fell back to the sample/demo data (Arjun, Rahul, Karthik, Vishnu) baked into `app.js` — that's why it looked like it wasn't reading the sheet. The `google-apps-script/` folder is no longer used and can be deleted from the repo.
 
 ## 3. Set your Sheet ID
 
-Open `config.js`. It's pre-filled with the ID from your current sheet:
+Open `config.js`. It's pre-filled with your current sheet's ID:
 
-```js
+```javascript
 const SHEET_ID = "1TU7oxekoErJuN9eIZFujQTNRbCMAqBky-p-3WysGTpk";
 ```
 
-The ID is the long string in your sheet's URL, between `/d/` and `/edit`. If you ever create a new sheet, update this value.
+The ID is the long string in your sheet's URL, between `/d/` and `/edit`. If you ever create a new sheet, update this value here.
 
-## 4. Push these files to GitHub
+## 4. Host the website for free
 
-Replace `index.html`, `style.css`, `app.js`, `config.js`, and `README.md` in your `aero-chess-open` repo with the versions here (via the GitHub web UI's "Add file → Upload files, or `git add . && git commit -m "rebuild site" && git push`).
+GitHub Pages is suitable for this static HTML/CSS/JavaScript website.
 
-## 5. GitHub Pages
+Create a public GitHub repository, for example:
 
-Already set up per your repo — no change needed:
+`aero-chess-open`
 
-`Settings → Pages → Deploy from a branch → main → / (root)`
+Upload:
 
-Your site stays at:
-
+```text
+index.html
+style.css
+app.js
+config.js
 ```
+
+Then:
+
+`Repository -> Settings -> Pages`
+
+Choose:
+
+`Deploy from a branch`
+
+Select:
+
+`main`
+
+and:
+
+`/ (root)`
+
+Save.
+
+GitHub will give you a URL similar to:
+
+```text
 https://YOUR-GITHUB-USERNAME.github.io/aero-chess-open/
 ```
 
+Share that link with your class.
+
 ## Updating the tournament
 
-Just edit the Google Sheet — add players, mark `paid = YES`, add matches, change `Pending` to `P1`/`P2`/`Draw`. The site picks it up within 30 seconds, no redeploy needed.
+You only edit the Google Sheet.
 
-## Troubleshooting
+### Add a player
 
-If the site shows "Couldn't load the sheet…":
-- Confirm sharing is set to **Anyone with the link → Viewer** (not "Restricted").
-- Confirm the tab names are exactly `Settings`, `Players`, `Matches`.
-- Confirm `SHEET_ID` in `config.js` matches your sheet's URL.
+Add a row to Players.
+
+### Collect ₹10
+
+Change:
+
+```text
+paid = NO
+```
+
+to:
+
+```text
+paid = YES
+```
+
+The prize pool automatically changes.
+
+Example:
+
+10 paid players:
+
+`10 × ₹10 = ₹100`
+
+25 paid players:
+
+`25 × ₹10 = ₹250`
+
+### Add a match
+
+Add a row to Matches.
+
+### Enter a result
+
+Change `Pending` to:
+
+```text
+P1
+```
+
+or
+
+```text
+P2
+```
+
+or
+
+```text
+Draw
+```
+
+The standings update automatically.
 
 ## Important
 
-This keeps money records simple: it only shows the total collected based on the `paid` column. Do not put bank account numbers, UPI IDs, or phone numbers in the public sheet.
+This version deliberately keeps money/payment records simple: it displays the total collected amount based on the `paid` column. Do not put bank account numbers, UPI credentials, phone numbers, or other sensitive personal information in the public-facing sheet.
+
+The site re-checks the sheet every 30 seconds, so players normally see updates without refreshing.
+
+## Troubleshooting
+
+If the page says "Could not load the sheet… Showing demo data":
+
+- Confirm sharing is **Anyone with the link → Viewer** (not "Restricted").
+- Confirm the tab names are exactly `Settings`, `Players`, `Matches`.
+- Confirm `SHEET_ID` in `config.js` matches your sheet's current URL.
