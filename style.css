@@ -17,7 +17,7 @@ a{text-decoration:none;color:inherit}
 .hero{min-height:680px;background:var(--paper);overflow:hidden;border-bottom:1px solid var(--line)}
 .nav{height:82px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(23,19,16,.12)}
 .brand{display:flex;align-items:center;gap:12px}
-.brand-mark{height:44px;width:auto;display:block}
+.brand-mark{font-size:38px;line-height:1}
 .eyebrow,.section-kicker{font-family:"Barlow Condensed",sans-serif;font-weight:700;letter-spacing:.15em;font-size:12px}
 .brand-title{font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:22px;letter-spacing:.02em}
 nav{display:flex;gap:25px;font-size:14px;font-weight:700}
@@ -34,7 +34,9 @@ h1 span{font-style:italic}
 .btn-primary{background:var(--ink);color:var(--white)}
 .btn-ghost{border:1px solid var(--ink)}
 .knight-art{position:relative;height:520px;display:flex;align-items:center;justify-content:center}
-.hero-poster{max-height:100%;max-width:100%;width:auto;height:auto;object-fit:contain;filter:drop-shadow(0 20px 30px rgba(35,25,10,.15))}
+.knight{font-size:470px;line-height:.75;transform:translateX(70px);filter:drop-shadow(0 20px 15px rgba(0,0,0,.05))}
+.knight.mirror{position:absolute;transform:scaleX(-1) translateX(70px)}
+.center-cut{position:absolute;font-size:180px;color:var(--paper);z-index:2}
 .main{padding:38px 0 70px}
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
 .stat-card{background:var(--paper2);border:1px solid var(--line);padding:20px;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow)}
@@ -71,7 +73,7 @@ footer{background:var(--ink);color:var(--white);padding:25px 0}.footer-inner{dis
 @media(max-width:850px){
   nav{display:none;position:absolute;top:82px;left:0;right:0;background:var(--paper);padding:18px 4%;flex-direction:column;border-bottom:1px solid var(--line);z-index:10}
   nav.open{display:flex}.menu-btn{display:block}
-  .hero-content{grid-template-columns:1fr}.knight-art{height:280px;order:-1}
+  .hero-content{grid-template-columns:1fr}.knight-art{height:280px;order:-1}.knight{font-size:240px}.knight.mirror{transform:scaleX(-1) translateX(40px)}.center-cut{font-size:90px}
   .stats-grid{grid-template-columns:repeat(2,1fr)}.players-grid{grid-template-columns:repeat(2,1fr)}
   .bracket-round{min-width:200px}
   .prize-card{grid-template-columns:1fr}.prize-right{border-left:0;border-top:1px solid #3d3832}
