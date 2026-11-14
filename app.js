@@ -4,7 +4,9 @@ const sampleData = {
     venue: "Aero 3rd Year Classroom",
     fee: 10,
     timeControl: "10 minutes per player",
-    prizeNote: "The collected registration amount goes to the Winner and Runner-Up."
+    prizeNote: "The collected registration amount goes to the Winner and Runner-Up.",
+    winner: "",
+    runnerUp: ""
   },
   players: [
     {id:"1", name:"Arjun", paid:"YES", status:"Registered"},
@@ -93,7 +95,9 @@ function normalize(rawSettings, players, matches){
       venue: rawSettings.venue || sampleData.settings.venue,
       fee: Number(rawSettings.fee || sampleData.settings.fee),
       timeControl: rawSettings.timeControl || sampleData.settings.timeControl,
-      prizeNote: rawSettings.prizeNote || sampleData.settings.prizeNote
+      prizeNote: rawSettings.prizeNote || sampleData.settings.prizeNote,
+      winner: rawSettings.winner || "",
+      runnerUp: rawSettings.runnerUp || ""
     },
     players: Array.isArray(players) ? players : [],
     matches: Array.isArray(matches) ? matches : []
@@ -135,6 +139,13 @@ function render(){
   $("prizeBig").textContent = money(prize);
   $("eventDate").textContent = settings.eventDate || "Sep 30 onwards";
   $("prizeNote").textContent = settings.prizeNote || "Collected registration amount goes to the Winner and Runner-Up.";
+
+  const champ = $("champ");
+  if(settings.winner){
+    $("champName").textContent = settings.winner;
+    $("champRunner").textContent = settings.runnerUp ? "Runner-up: " + settings.runnerUp : "";
+    champ.hidden = false;
+  } else champ.hidden = true;
 
   renderPlayers(players);
   renderMatches(matches);
