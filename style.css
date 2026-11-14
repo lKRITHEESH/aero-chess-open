@@ -71,3 +71,10 @@ footer{background:var(--ink);color:var(--white);padding:25px 0}.footer-inner{dis
   h1{font-size:58px}.stats-grid,.players-grid{grid-template-columns:1fr}.section-head{align-items:start;flex-direction:column}.search,.select{width:100%}
   .match-card{grid-template-columns:52px 1fr auto}.hero{min-height:auto}.hero-content{padding:45px 0 30px}.big-money{font-size:65px}
 }
+
+.champ{background:var(--ink);color:var(--white);padding:30px;margin:0 0 30px;display:flex;gap:22px;align-items:center;border-left:6px solid var(--accent)}
+.champ[hidden]{display:none}
+.champ-icon{font-size:60px;line-height:1}
+.champ-name{font-family:"Barlow Condensed";font-weight:800;font-size:clamp(44px,8vw,76px);line-height:.95}
+.champ-sub{color:#cfc7ba;font-size:14px;margin-top:4px}
+.champ .section-kicker{color:var(--accent)}
