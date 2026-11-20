@@ -8,7 +8,7 @@
   Season 1 keeps its original sheet, so old data stays available at ?season=1
 */
 const SEASONS = {
-  "2": { label: "Season 2", sheetId: "", status: "upcoming", poster: "poster-s2.jpg",
+  "2": { label: "Season 2", sheetId: "", status: "upcoming", poster: "poster-s2.jpg", showPrize: false,
          defaults: { eventDate: "Dates to be announced", venue: "Aero 3rd Year Classroom", fee: 10, timeControl: "10 minutes per player",
                      prizeNote: "The collected registration amount goes to the Winner and Runner-Up." } },
   "1": { label: "Season 1", sheetId: "1TU7oxekoErJuN9eIZFujQTNRbCMAqBky-p-3WysGTpk", status: "completed", poster: "",
