@@ -1,27 +1,21 @@
 /*
-  AERO CHESS OPEN — DATA CONNECTION
+  AERO CHESS OPEN: SEASONS
+  Each season has its own Google Sheet with tabs: Settings, Players, Matches.
+  Share each sheet as "Anyone with the link -> Viewer", then paste its ID here
+  (the part between /d/ and /edit in the sheet's address).
 
-  The website now reads your Google Sheet directly. No Google Apps Script
-  backend, no deployment, no URL to paste — that step was where the old
-  setup was breaking (API_URL was left empty, so the site always fell back
-  to demo data).
-
-  Two things to check:
-
-  1. Share the Google Sheet:
-     Share -> General access -> "Anyone with the link" -> Viewer
-     (Viewer access only lets people SEE it, not edit it.)
-
-  2. SHEET_ID below must match your sheet's URL, the long string
-     between /d/ and /edit:
-     https://docs.google.com/spreadsheets/d/  THIS_PART  /edit
+  Season 2: make a copy of the Season 1 sheet, clear the players/matches, paste its ID below.
+  Season 1 keeps its original sheet, so old data stays available at ?season=1
 */
-const SHEET_ID = "1TU7oxekoErJuN9eIZFujQTNRbCMAqBky-p-3WysGTpk";
-
-const SHEET_TABS = {
-  settings: "Settings",
-  players: "Players",
-  matches: "Matches"
+const SEASONS = {
+  "2": { label: "Season 2", sheetId: "", status: "upcoming", poster: "poster-s2.jpg",
+         defaults: { eventDate: "Dates to be announced", venue: "Aero 3rd Year Classroom", fee: 10, timeControl: "10 minutes per player",
+                     prizeNote: "The collected registration amount goes to the Winner and Runner-Up." } },
+  "1": { label: "Season 1", sheetId: "1TU7oxekoErJuN9eIZFujQTNRbCMAqBky-p-3WysGTpk", status: "completed", poster: "",
+         defaults: { eventDate: "September 30 onwards", venue: "Aero 3rd Year Classroom", fee: 10, timeControl: "10 minutes per player",
+                     prizeNote: "The collected registration amount went to the Winner and Runner-Up." } }
 };
-
+const DEFAULT_SEASON = "2";
+const SHEET_TABS = { settings: "Settings", players: "Players", matches: "Matches" };
+const HUB_URL = "https://lkritheesh.github.io/aero-sports-hub/";
 const REFRESH_MS = 30000;
