@@ -3,9 +3,9 @@
 <title>Aero Chess Open</title>
 <meta name="description" content="Aero Chess Open: players, matches and live standings for 3rd Year Aerospace Engineering.">
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=2"></head><body>
+<link rel="stylesheet" href="style.css?v=3"></head><body>
 <nav class="nav"><div class="wrap nav-in"><a class="brand" href="#home">♞ AERO CHESS OPEN</a>
- <div class="links"><a href="#players">Players</a><a href="#matches">Matches</a><a href="#standings">Standings</a><a href="#prize">Prize Pool</a><a id="hub" href="#">All Games</a></div></div></nav>
+ <div class="links"><a href="#players">Players</a><a href="#matches">Matches</a><a href="#standings">Standings</a><a id="navPrize" href="#prize">Prize Pool</a><a id="seasonLink" href="#">Season 1</a><a id="hub" href="#">All Games</a></div></div></nav>
 <header class="hero" id="home"><div class="wrap hero-in">
  <div><h1><span class="aero">AERO</span><span class="sub">CHESS OPEN</span></h1><div class="badge" id="badge">SEASON 2</div>
   <div class="bar"><p id="venueLine"></p><p>FOR 3RD YEAR AERO STUDENTS</p></div>
@@ -14,7 +14,7 @@
 <main class="wrap">
  <section class="champ" id="champ" hidden><div class="trophy">🏆</div><div><small>SEASON <b id="cs"></b> CHAMPION</small><div class="cn" id="champName"></div><div id="champRunner"></div></div></section>
  <section class="stats">
-  <div class="card"><small>PLAYERS</small><b id="playerCount">–</b></div><div class="card"><small>PRIZE POOL</small><b id="prizePool">₹–</b></div>
+  <div class="card"><small>PLAYERS</small><b id="playerCount">–</b></div><div class="card" id="prizeCard"><small>PRIZE POOL</small><b id="prizePool">₹–</b></div>
   <div class="card"><small>FORMAT</small><b class="s">Rapid · 10 min</b></div><div class="card"><small>TOURNAMENT</small><b class="s" id="eventDate">–</b></div></section>
  <div class="note" id="note" hidden></div>
  <section class="sec" id="players"><div class="head"><h2><small>THE FIELD</small>Players</h2><input id="playerSearch" type="search" placeholder="Search player…"></div><div id="playersGrid" class="pgrid"></div></section>
@@ -26,4 +26,4 @@
  <section class="sec info"><div class="card"><h3>📍 Venue</h3><p id="venue"></p></div><div class="card"><h3>⏱ Time Control</h3><p id="tc"></p></div><div class="card"><h3>🚫 Fair Play</h3><p>No engines. No excuses. Just chess.</p></div></section>
  <div class="upd" id="updatedAt">Loading…</div></main>
 <footer><div class="wrap fin"><div><b>AERO CHESS OPEN</b><br>ORGANIZED BY AERO GAMES ORGANISATION</div><a id="hub2" href="#">♞ More games &amp; tournaments</a></div></footer>
-<script src="config.js"></script><script src="app.js?v=2"></script></body></html>
+<script src="config.js"></script><script src="app.js?v=3"></script></body></html>
