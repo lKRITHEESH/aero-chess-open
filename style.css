@@ -16,7 +16,7 @@ h1{margin:0;line-height:.9}.aero{display:block;font-weight:800;font-size:clamp(8
 .glyph{font-size:clamp(160px,28vw,320px);line-height:.8;text-align:center;color:var(--r);opacity:.85;text-shadow:0 0 50px rgba(211,24,43,.5)}
 .champ{display:flex;gap:20px;align-items:center;background:linear-gradient(110deg,var(--r2),#1a0809);border:1px solid var(--r);padding:26px;margin:10px 0 24px}.champ[hidden]{display:none}
 .trophy{font-size:58px}.champ small{letter-spacing:.2em;font-weight:800;font-size:12px;color:#ffb3ba}.cn{font-weight:800;font-size:clamp(32px,6vw,62px);line-height:1;letter-spacing:.04em}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:rgba(255,255,255,.04);border:1px solid var(--line);padding:18px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}.card{background:rgba(255,255,255,.04);border:1px solid var(--line);padding:18px}
 .card small{display:block;letter-spacing:.16em;font-size:11px;font-weight:700;color:var(--mut)}.card b{font-size:30px;font-weight:800}.card b.s{font-size:19px}
 .note{margin-top:14px;border:1px dashed var(--r);padding:16px;color:#ffd0d4}.note[hidden]{display:none}
 .sec{margin-top:64px}.head{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap;margin-bottom:18px}
@@ -39,3 +39,7 @@ footer{margin-top:40px;border-top:1px solid var(--line);padding:26px 0;font-size
 @media(max-width:860px){.hero-in{grid-template-columns:1fr}.poster{justify-self:start;max-width:300px}.stats{grid-template-columns:repeat(2,1fr)}.pgrid{grid-template-columns:repeat(2,1fr)}
 .mc{grid-template-columns:60px 1fr auto}.mc .mt{grid-column:1/4;text-align:left}.pcard,.info{grid-template-columns:1fr}.prows{border-left:0;border-top:1px solid var(--line)}}
 @media(max-width:540px){.stats,.pgrid{grid-template-columns:1fr}}
+[hidden]{display:none!important}
+.side{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.side.lose b{color:var(--mut);font-weight:600}.side.win b{color:#fff}
+.wt{background:var(--r);color:#fff;font-size:10px;font-weight:800;letter-spacing:.12em;padding:3px 8px}
+.mc:has(.win){border-left:4px solid var(--r)}.res.done{color:#ff8d98}
