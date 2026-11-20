@@ -13,12 +13,14 @@ async function fetchTab(id,name){
   if(h.every(x=>!x)&&rows.length){h=rows[0].c.map(c=>String(val(c)).trim());rows=rows.slice(1)}
   return rows.map(r=>Object.fromEntries(h.map((k,i)=>[k||"c"+i,val(r.c[i])]))).filter(o=>Object.values(o).some(v=>String(v).trim()));
 }
+function outcome(x){const r=String(x.result||"").trim().toLowerCase(),a=String(x.player1).toLowerCase(),b=String(x.player2).toLowerCase();
+  if(["p1","player1","1","win1",a+" win",a].includes(r))return"p1";
+  if(["p2","player2","2","win2",b+" win",b].includes(r))return"p2";
+  if(["draw","d","½-½","0.5-0.5"].includes(r))return"draw";return null}
 function standings(){
   const m={};state.players.forEach(p=>m[p.name]={name:p.name,played:0,w:0,d:0,l:0,pts:0});
-  state.matches.forEach(x=>{const a=m[x.player1],b=m[x.player2],r=String(x.result||"").trim().toLowerCase();if(!a||!b)return;
-    if(["p1","player1","1","win1",String(x.player1).toLowerCase()+" win"].includes(r)){a.w++;a.pts++;b.l++}
-    else if(["p2","player2","2","win2",String(x.player2).toLowerCase()+" win"].includes(r)){b.w++;b.pts++;a.l++}
-    else if(["draw","d","½-½","0.5-0.5"].includes(r)){a.d++;b.d++;a.pts+=.5;b.pts+=.5}else return;a.played++;b.played++});
+  state.matches.forEach(x=>{const a=m[x.player1],b=m[x.player2],o=outcome(x);if(!a||!b||!o)return;
+    if(o=="p1"){a.w++;a.pts++;b.l++}else if(o=="p2"){b.w++;b.pts++;a.l++}else{a.d++;b.d++;a.pts+=.5;b.pts+=.5}a.played++;b.played++});
   return Object.values(m).sort((x,y)=>y.pts-x.pts||y.w-x.w||x.name.localeCompare(y.name));
 }
 function drawSeasons(){
@@ -32,6 +34,9 @@ function render(){
   $("badge").textContent=S.label.toUpperCase();$("venueLine").textContent=String(s.venue).toUpperCase();
   if(S.poster){$("poster").src=S.poster;$("poster").hidden=false;$("glyph").hidden=true}else{$("poster").hidden=true;$("glyph").hidden=false}
   $("hub").href=$("hub2").href=HUB_URL;
+  const other=Object.keys(SEASONS).find(k=>k!=season),sl=$("seasonLink");sl.textContent=SEASONS[other].label+(SEASONS[other].status=="completed"?" (Archive)":"");sl.href="?season="+other;
+  sl.onclick=ev=>{ev.preventDefault();season=other;history.replaceState(null,"","?season="+season);scrollTo(0,0);start()};
+  const showPrize=S.showPrize!==false;["prizeCard","prize","navPrize"].forEach(id=>$(id).hidden=!showPrize);
   $("playerCount").textContent=players.length||"–";$("registeredCount").textContent=players.length||"–";$("collectedCount").textContent=paid+" paid";
   $("prizePool").textContent=money(prize);$("prizeBig").textContent=money(prize);$("feeText").textContent=money(fee);
   $("eventDate").textContent=s.eventDate;$("prizeNote").textContent=s.prizeNote;$("venue").textContent=s.venue;$("tc").textContent=s.timeControl;
@@ -47,7 +52,10 @@ function renderPlayers(){const q=$("playerSearch").value.trim().toLowerCase(),f=
 function renderRounds(){const sel=$("roundFilter"),old=sel.value,rs=[...new Set(state.matches.map(m=>m.round).filter(Boolean))];
   sel.innerHTML=`<option value="all">All rounds</option>`+rs.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join("");sel.value=rs.includes(old)?old:"all"}
 function renderMatches(){const f=$("roundFilter").value,ms=f==="all"?state.matches:state.matches.filter(m=>m.round===f);
-  $("matchesList").innerHTML=ms.length?ms.map(m=>`<div class="mc"><div class="rd">${esc(m.round||"Match")}</div><b>${esc(m.player1)}</b><div class="vs">VS</div><b>${esc(m.player2)}</b><div class="mt">📅 ${esc(m.date||"TBA")}<br>⏰ ${esc(m.time||"TBA")}<br><span class="res">${esc(m.result||"Pending")}</span></div></div>`).join(""):`<div class="empty">No matches published yet.</div>`}
+  const side=(n,w,l)=>`<div class="side ${w?"win":""} ${l?"lose":""}"><b>${esc(n)}</b>${w?'<span class="wt">🏆 WON</span>':""}</div>`;
+  $("matchesList").innerHTML=ms.length?ms.map(m=>{const o=outcome(m),done=!!o;
+    const txt=o=="p1"?esc(m.player1)+" won":o=="p2"?esc(m.player2)+" won":o=="draw"?"Draw":(m.result&&!done?esc(m.result):"Pending");
+    return `<div class="mc"><div class="rd">${esc(m.round||"Match")}</div>${side(m.player1,o=="p1",o=="p2")}<div class="vs">VS</div>${side(m.player2,o=="p2",o=="p1")}<div class="mt">📅 ${esc(m.date||"TBA")}<br>⏰ ${esc(m.time||"TBA")}<br><span class="res ${done?"done":""}">${txt}</span></div></div>`}).join(""):`<div class="empty">No matches published yet.</div>`}
 async function load(){const S=SEASONS[season];state={settings:{},players:[],matches:[]};
   if(!S.sheetId)return render();
   try{const[a,p,m]=await Promise.all([fetchTab(S.sheetId,SHEET_TABS.settings),fetchTab(S.sheetId,SHEET_TABS.players),fetchTab(S.sheetId,SHEET_TABS.matches)]);
