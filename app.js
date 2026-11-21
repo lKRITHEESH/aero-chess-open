@@ -58,7 +58,8 @@ function renderMatches(){const f=$("roundFilter").value,ms=f==="all"?state.match
     return `<div class="mc"><div class="rd">${esc(m.round||"Match")}</div>${side(m.player1,o=="p1",o=="p2")}<div class="vs">VS</div>${side(m.player2,o=="p2",o=="p1")}<div class="mt">📅 ${esc(m.date||"TBA")}<br>⏰ ${esc(m.time||"TBA")}<br><span class="res ${done?"done":""}">${txt}</span></div></div>`}).join(""):`<div class="empty">No matches published yet.</div>`}
 async function load(){const S=SEASONS[season];state={settings:{},players:[],matches:[]};
   if(!S.sheetId)return render();
-  try{const[a,p,m]=await Promise.all([fetchTab(S.sheetId,SHEET_TABS.settings),fetchTab(S.sheetId,SHEET_TABS.players),fetchTab(S.sheetId,SHEET_TABS.matches)]);
+  const T=S.tabs||SHEET_TABS;
+  try{const[a,p,m]=await Promise.all([fetchTab(S.sheetId,T.settings),fetchTab(S.sheetId,T.players),fetchTab(S.sheetId,T.matches)]);
     const s={};a.forEach(r=>{const k=Object.keys(r),key=String(r[k[0]]).trim();if(key)s[key]=r[k[1]]});
     if(s.fee)s.fee=Number(s.fee);state={settings:s,players:p,matches:m};render()}
   catch(e){console.error(e);render();$("updatedAt").textContent="Could not load the sheet. Check it is shared as \"Anyone with the link can view\"."}}
